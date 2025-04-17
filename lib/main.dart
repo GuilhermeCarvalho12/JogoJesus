@@ -3,6 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:io';
+import 'package:jesusprojetoimpossivel/cenarios/cenario1.dart';
+import 'package:jesusprojetoimpossivel/cenarios/cenario2.dart';
+import 'package:jesusprojetoimpossivel/cenarios/cenario3.dart';
+import 'package:jesusprojetoimpossivel/cenarios/cenario4.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +44,7 @@ class _MenuScreenState extends State<MenuScreen> {
   String dificuldade = 'Médio';
   final AudioPlayer _player = AudioPlayer();
 
+
   @override
   void initState() {
     super.initState();
@@ -53,15 +59,16 @@ class _MenuScreenState extends State<MenuScreen> {
       volume = prefs.getDouble('volume') ?? 0.5;
     });
 
+    await _player.setVolume(volume);
+
     if (somLigado) {
       _tocarMusica();
     }
-    await _player.setVolume(volume);
   }
 
   Future<void> _tocarMusica() async {
     await _player.setReleaseMode(ReleaseMode.loop);
-    await _player.play(AssetSource('sounds/musica_fundo.ogg'));
+    await _player.play(AssetSource('sounds/musica_jogo.ogg'));
   }
 
   Future<void> _pararMusica() async {
@@ -119,15 +126,21 @@ class _MenuScreenState extends State<MenuScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 550),
-                    _menuButton('Jogar ($dificuldade)', () {
+                    _menuButton('Jogar ($dificuldade)', () async {
+                      await _pararMusica();
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              JogarScreen(dificuldade: dificuldade),
+                          builder: (context) => JogarScreen(dificuldade: dificuldade),
                         ),
-                      );
+                      ).then((_) {
+                        if (somLigado) {
+                          _tocarMusica();
+                        }
+                      });
                     }),
+
                     const SizedBox(height: 30),
                     _menuButton('Opções', () {
                       Navigator.push(
@@ -210,7 +223,6 @@ class _MenuScreenState extends State<MenuScreen> {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white.withOpacity(0.85),
         foregroundColor: Colors.black,
         padding: const EdgeInsets.symmetric(horizontal: 100, vertical: 60),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -291,24 +303,311 @@ class _AjustarVolumeScreenState extends State<AjustarVolumeScreen> {
   }
 }
 
-class JogarScreen extends StatelessWidget {
+class JogarScreen extends StatefulWidget {
   final String dificuldade;
 
   const JogarScreen({super.key, required this.dificuldade});
 
   @override
+  State<JogarScreen> createState() => _JogarScreenState();
+}
+
+class _JogarScreenState extends State<JogarScreen> {
+  bool somLigado = true;
+  final AudioPlayer _player = AudioPlayer();
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarSom();
+  }
+  Future<void> _carregarSom() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      somLigado = prefs.getBool('somLigado') ?? true;
+    });
+
+    if (somLigado) {
+      _tocarMusica();
+    }
+  }
+
+  Future<void> _tocarMusica() async {
+    await _player.setReleaseMode(ReleaseMode.loop);
+    await _player.play(AssetSource('sounds/musica_jogo.ogg'));
+  }
+
+  Future<void> _pararMusica() async {
+    await _player.stop();
+  }
+
+  Future<void> _alternarSom() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      somLigado = !somLigado;
+    });
+    await prefs.setBool('somLigado', somLigado);
+
+    if (somLigado) {
+      _tocarMusica();
+    } else {
+      _pararMusica();
+    }
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Voltar')),
-      body: Center(
-        child: Text(
-          'Jogo iniciado no modo $dificuldade!',
-          style: const TextStyle(fontSize: 24),
-        ),
+      appBar: AppBar(title: const Text('Voltar ao Menu')),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/imagem_opcoes.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 30),
+                Text(
+                  'Dificuldade: ${widget.dificuldade}',
+                  style: const TextStyle(
+                    fontSize: 38,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(2, 2),
+                        blurRadius: 3,
+                        color: Colors.black,
+                      ),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 60),
+                Expanded(
+                  child: Center(
+                    child: GridView.count(
+                      shrinkWrap: true,
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      padding: const EdgeInsets.all(30),
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => Cenario1Screen(dificuldade: widget.dificuldade),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.asset(
+                                  'assets/images/cura1_oficial.png',
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Container(
+                                width: 160,
+                                height: 100,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => Cenario2Screen(dificuldade: widget.dificuldade),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.asset(
+                                  'assets/images/peixe1_oficial.png',
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Container(
+                                width: 160,
+                                height: 100,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => Cenario3Screen(dificuldade: widget.dificuldade),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.asset(
+                                  'assets/images/vinho2_oficial.png',
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Container(
+                                width: 160,
+                                height: 100,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => Cenario4Screen(dificuldade: widget.dificuldade),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.asset(
+                                  'assets/images/bonus2_oficial.png',
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Container(
+                                width: 160,
+                                height: 100,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      ],
+                    ),
+                  ),
+                ),
+
+              ],
+            ),
+          ),
+          Positioned(
+            top: 20,
+            right: 20,
+            child: IconButton(
+              icon: Icon(
+                somLigado ? Icons.volume_up : Icons.volume_off,
+                size: 40,
+                color: Colors.white,
+              ),
+              onPressed: _alternarSom,
+            ),
+          ),
+        ],
       ),
     );
   }
+
+  Widget _buildCenarioButton(BuildContext context, String titulo) {
+    return ElevatedButton(
+      onPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Você selecionou: $titulo')),
+        );
+      },
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.black,
+        padding: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        textStyle: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        minimumSize: const Size(150, 60), // Botões menores
+      ),
+      child: Text(titulo),
+    );
+  }
 }
+
 
 class OpcoesScreen extends StatefulWidget {
   const OpcoesScreen({super.key});
@@ -416,7 +715,6 @@ class _OpcoesScreenState extends State<OpcoesScreen> {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white.withOpacity(0.85),
         foregroundColor: Colors.black,
         padding: const EdgeInsets.symmetric(horizontal: 100, vertical: 60),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

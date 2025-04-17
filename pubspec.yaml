@@ -58,7 +58,11 @@ flutter:
     - assets/images/Creditos_oficial.png
     - assets/images/imagem_opcoes.png
     - assets/images/tutorial_oficial.png
-    - assets/sounds/musica_fundo.ogg
+    - assets/sounds/musica_jogo.ogg
+    - assets/images/peixe1_oficial.png
+    - assets/images/cura1_oficial.png
+    - assets/images/vinho2_oficial.png
+    - assets/images/bonus2_oficial.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
